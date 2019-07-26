@@ -2,8 +2,6 @@
 
 This code implements the encoding and decoding process of DeepCABAC as described in _(insert paper link)_.
 
-An example code on how to use it can be found under _Tests/test.py_.
-
 Python binding of the C++ Implementation of deepCABAC using pybind11.
 
 ## How to install
