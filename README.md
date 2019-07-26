@@ -1,5 +1,7 @@
 # deepCABAC for Python
 
+This code implements the encoding and decoding process of DeepCABAC as described in (insert paper link).
+
 Python binding of the C++ Implementation of deepCABAC using pybind11.
 
 ## How to install
