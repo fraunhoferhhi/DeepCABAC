@@ -1,4 +1,4 @@
-# deepCABAC for Python
+# DeepCABAC for Python
 
 This code implements the encoding and decoding process of DeepCABAC as described in _(insert paper link)_.
 
