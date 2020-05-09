@@ -75,8 +75,8 @@ void CABACDecoder::decodeSideinfo( std::vector<uint32_t>* pDimensions, float32_t
 {
   g_NumGtxFlags = 4 + m_BinDecoder.decodeBinsEP(4);
 
-  uint32_t dimensionFlag = m_BinDecoder.decodeBinEP();
-  int32_t  numDims       = dimensionFlag ? 4 : 2;
+  uint32_t dimensionFlag = m_BinDecoder.decodeBinsEP(2);
+  int32_t  numDims       = 1 << dimensionFlag;  // 0 for 1, 1 for 2, 2 for 4
 
   uint32_t currDim      = 0;
 

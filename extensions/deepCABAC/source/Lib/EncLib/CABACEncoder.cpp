@@ -251,10 +251,10 @@ void CABACEncoder::encodeSideinfo( float32_t stepsize, py::array_t<float32_t, py
   m_BinEncoder.encodeBinsEP(g_NumGtxFlags - 4, 4);
 
   py::buffer_info bi_Weights = Weights.request();
-  uint32_t dimensionFlag = bi_Weights.ndim > 2 ? 1 : 0; //indicates the number of Dimensions: dimensionFlag == 0 -> Dimsize == 2 // dimensionFlag == 1 -> Dimsize == 4
+  uint32_t dimensionFlag = bi_Weights.ndim >> 1; //indicates the number of Dimensions: dimensionFlag == 0 -> Dimsize == 1 // dimensionFlag == 1 -> Dimsize == 2 // dimensionFlag == 2 -> Dimsize == 4
   uint32_t currDim       = 0;
 
-  m_BinEncoder.encodeBinEP(dimensionFlag);
+  m_BinEncoder.encodeBinsEP(dimensionFlag, 2);
 
   for (uint32_t i = 0; i < bi_Weights.ndim; i++)
   {
