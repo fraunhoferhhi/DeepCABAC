@@ -74,7 +74,7 @@ int32_t ContextModeler::getSignFlagCtxId()
     return ctxId;
 }
 
-int32_t ContextModeler::getGtxCtxId( uint32_t currWeighVal, uint32_t numGtxFlagsCoded )
+int32_t ContextModeler::getGtxCtxId( int32_t currWeighVal, uint32_t numGtxFlagsCoded )
 {
     int32_t offset =  6;
 
@@ -86,7 +86,7 @@ int32_t ContextModeler::getGtxCtxId( uint32_t currWeighVal, uint32_t numGtxFlags
 }
 
 
-void ContextModeler::updateNeighborCtx( uint32_t currWeightVal, uint32_t posInMat, uint32_t layerWidth )
+void ContextModeler::updateNeighborCtx( int32_t currWeightVal, uint32_t posInMat, uint32_t layerWidth )
 {
     if (posInMat % layerWidth == layerWidth - 1)
     {

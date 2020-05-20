@@ -54,8 +54,8 @@ public:
     int32_t getSigCtxId       ();
     int32_t getSignFlagCtxId  ();
 
-    int32_t getGtxCtxId       ( uint32_t currWeighVal, uint32_t numGtxFlagsCoded );
-    void    updateNeighborCtx ( uint32_t currWeightVal, uint32_t posInMat, uint32_t layerWidth );
+    int32_t getGtxCtxId       ( int32_t currWeighVal, uint32_t numGtxFlagsCoded );
+    void    updateNeighborCtx ( int32_t currWeightVal, uint32_t posInMat, uint32_t layerWidth );
 private:
     int32_t neighborWeightVal;
 };

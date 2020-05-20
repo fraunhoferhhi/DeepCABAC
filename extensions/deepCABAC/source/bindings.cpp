@@ -209,7 +209,7 @@ PYBIND11_MODULE(deepCABAC, m)
 
     py::class_<Decoder>(m, "Decoder")
         .def( py::init<>())
-        .def( "getStream",     &Decoder::getStream     )
+        .def( "getStream",     &Decoder::getStream,    py::keep_alive<1, 2>())
         .def( "decodeWeights", &Decoder::decodeWeights )
         .def( "finish",        &Decoder::finish        );
 }
