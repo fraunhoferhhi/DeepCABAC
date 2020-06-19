@@ -41,7 +41,7 @@ NON-INFRINGEMENT WITH RESPECT TO THIS SOFTWARE.
 
 CABACDecoder::CABACDecoder()
 {
-    m_CtxStore.resize( 6 + 19 * 2 + 16); // NumOfGtxFlags is max 19
+    m_CtxStore.resize( 6 + 19 * 2 + 32); // NumOfGtxFlags is max 19
     initCtxMdls();
 }
 
@@ -75,8 +75,8 @@ void CABACDecoder::decodeSideinfo( std::vector<uint32_t>* pDimensions, float32_t
 {
   g_NumGtxFlags = 4 + m_BinDecoder.decodeBinsEP(4);
 
-  uint32_t dimensionFlag = m_BinDecoder.decodeBinEP();
-  int32_t  numDims       = dimensionFlag ? 4 : 2;
+  uint32_t dimensionFlag = m_BinDecoder.decodeBinsEP(2);
+  int32_t  numDims       = 1 << dimensionFlag;  // 0 for 1, 1 for 2, 2 for 4
 
   uint32_t currDim      = 0;
 
@@ -127,9 +127,9 @@ void CABACDecoder::decodeWeightVal( int32_t& decodedIntVal )
             signFlag = m_BinDecoder.decodeBin(m_CtxStore[ signCtx ]);
         }
 
-        int16_t intermediateVal = signFlag ? -1 : 1;
+        int32_t intermediateVal = signFlag ? -1 : 1;
 
-        int32_t maxAbsVal = signFlag ? maxAbsNegative : maxAbsPositive;
+        uint32_t maxAbsVal = signFlag ? maxAbsNegative : maxAbsPositive;
         int32_t ctxIdx = m_CtxModeler.getGtxCtxId(intermediateVal, 0);
         uint32_t grXFlag = 0;
 
@@ -159,7 +159,7 @@ void CABACDecoder::decodeWeightVal( int32_t& decodedIntVal )
         {
             decodedIntVal++;
 
-            if (decodedIntVal < maxAbsVal)
+            if (std::abs(decodedIntVal) < maxAbsVal)
             {
                 uint32_t remAbsLevel = m_BinDecoder.decodeRemAbsLevelNew(m_CtxStore);
                 decodedIntVal += remAbsLevel;

@@ -1,4 +1,4 @@
-/*
+"""
 The copyright in this software is being made available under this Software
 Copyright License. This software may be subject to other third party and
 contributor rights, including patent rights, and no such rights are
@@ -35,65 +35,27 @@ WITHOUT LIMITATION THE PATENTS OF THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS, ARE GRANTED BY THIS SOFTWARE LICENSE. THE
 COPYRIGHT HOLDERS AND CONTRIBUTORS PROVIDE NO WARRANTY OF PATENT
 NON-INFRINGEMENT WITH RESPECT TO THIS SOFTWARE.
-*/
-#include "ContextModeler.h"
+"""
+import pytest
+import numpy as np
+
+import deepCABAC
 
 
-void ContextModeler::init()
-{
-    neighborWeightVal = 0;
-}
+@pytest.mark.parametrize('arr', [np.random.rand(10).astype(np.float32),
+                                 np.random.rand(8, 16, 3, 3).astype(np.float32),
+                                 np.random.rand(8, 16).astype(np.float32)])
+def test_deepcabac(arr):
+    stepsize = 2 ** (-0.5 * 15)
 
-void ContextModeler::resetNeighborCtx()
-{
-    init();
-}
+    encoder = deepCABAC.Encoder()
+    encoder.encodeWeightsRD(arr, 0.1, stepsize, 0.)
+    a_enc = encoder.finish().tobytes()
 
+    dec = deepCABAC.Decoder()
+    dec.getStream(np.frombuffer(a_enc, dtype=np.uint8))
+    arr_rec = dec.decodeWeights()
+    dec.finish()
 
-int32_t ContextModeler::getSigCtxId()
-{
-    int32_t ctxId = 0;
-
-    if (neighborWeightVal != 0)
-    {
-        ctxId = neighborWeightVal < 0 ? 1 : 2;
-    }
-
-    return ctxId;
-}
-
-int32_t ContextModeler::getSignFlagCtxId()
-{
-    int32_t ctxId = 3;
-
-    if (neighborWeightVal != 0)
-    {
-        ctxId = neighborWeightVal < 0 ? 4 : 5;
-    }
-
-    return ctxId;
-}
-
-int32_t ContextModeler::getGtxCtxId( int32_t currWeighVal, uint32_t numGtxFlagsCoded )
-{
-    int32_t offset =  6;
-
-    int32_t ctxId  = 0;
-
-    ctxId = currWeighVal > 0 ? (numGtxFlagsCoded << 1) : 1 + (numGtxFlagsCoded << 1);
-
-    return (ctxId + offset);
-}
-
-
-void ContextModeler::updateNeighborCtx( int32_t currWeightVal, uint32_t posInMat, uint32_t layerWidth )
-{
-    if (posInMat % layerWidth == layerWidth - 1)
-    {
-        neighborWeightVal = 0;
-    }
-    else
-    {
-        neighborWeightVal = currWeightVal;
-    }
-}
+    arr_quant = (arr / stepsize).round() * stepsize
+    np.testing.assert_equal(arr_quant, arr_rec)

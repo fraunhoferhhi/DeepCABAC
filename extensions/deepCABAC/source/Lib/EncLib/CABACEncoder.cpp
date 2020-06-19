@@ -44,7 +44,7 @@ NON-INFRINGEMENT WITH RESPECT TO THIS SOFTWARE.
 
 CABACEncoder::CABACEncoder( std::vector<uint8_t>* pBytestream )
 {
-    m_CtxStore.resize( 6 + g_NumGtxFlags * 2 + 16);
+    m_CtxStore.resize( 6 + g_NumGtxFlags * 2 + 32);
 
     initCtxMdls();
     m_BinEncoder.setByteStreamBuf(pBytestream);
@@ -124,7 +124,10 @@ uint64_t CABACEncoder::estimateWeightVal( int32_t weightInt )
 
 void  CABACEncoder::encodeWeightVal( int32_t weightInt )
 {
-    CHECK( ( weightInt < -(1 << (BITS_WEIGHT_INTS - 1)) ) || ( weightInt >= (1 << (BITS_WEIGHT_INTS - 1)) ) , printf("Value to encode %i  exceeds %i bits (stepsize is too small)!", weightInt,  BITS_WEIGHT_INTS))
+    uint32_t maxAbsPositive = (1 << (BITS_WEIGHT_INTS - 1)) - 1;
+    uint32_t maxAbsNegative = (1 << (BITS_WEIGHT_INTS - 1));
+
+    CHECK( !( weightInt >= -(int32_t(maxAbsNegative)) ) || !( weightInt < int32_t(maxAbsPositive) ) , printf("Value to encode %i  exceeds %i bits (stepsize is too small)!", weightInt,  BITS_WEIGHT_INTS))
 
     uint32_t sigFlag = weightInt != 0 ? 1 : 0;
     int32_t sigctx = m_CtxModeler.getSigCtxId();
@@ -134,8 +137,6 @@ void  CABACEncoder::encodeWeightVal( int32_t weightInt )
     if (sigFlag)
     {
         uint32_t signFlag = weightInt < 0 ? 1 : 0;
-        uint32_t maxAbsPositive = (1 << (BITS_WEIGHT_INTS - 1)) - 1;
-        uint32_t maxAbsNegative = (1 << (BITS_WEIGHT_INTS - 1));
 
         if (maxAbsNegative != 0 && maxAbsPositive != 0)
         {
@@ -251,10 +252,10 @@ void CABACEncoder::encodeSideinfo( float32_t stepsize, py::array_t<float32_t, py
   m_BinEncoder.encodeBinsEP(g_NumGtxFlags - 4, 4);
 
   py::buffer_info bi_Weights = Weights.request();
-  uint32_t dimensionFlag = bi_Weights.ndim > 2 ? 1 : 0; //indicates the number of Dimensions: dimensionFlag == 0 -> Dimsize == 2 // dimensionFlag == 1 -> Dimsize == 4
+  uint32_t dimensionFlag = bi_Weights.ndim >> 1; //indicates the number of Dimensions: dimensionFlag == 0 -> Dimsize == 1 // dimensionFlag == 1 -> Dimsize == 2 // dimensionFlag == 2 -> Dimsize == 4
   uint32_t currDim       = 0;
 
-  m_BinEncoder.encodeBinEP(dimensionFlag);
+  m_BinEncoder.encodeBinsEP(dimensionFlag, 2);
 
   for (uint32_t i = 0; i < bi_Weights.ndim; i++)
   {
@@ -273,7 +274,6 @@ void CABACEncoder::encodeWeightsRD( float32_t* pWeights, float32_t* pIntervals, 
   int32_t bestIntVal = 0;
   double distSum     = 0.0;
   m_CtxModeler.resetNeighborCtx();
-
   for (uint32_t posInMat = 0; posInMat < numWeights; posInMat++)
   {
     bestIntVal = 0;
