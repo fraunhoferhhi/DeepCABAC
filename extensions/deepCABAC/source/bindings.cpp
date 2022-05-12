@@ -54,6 +54,8 @@ public:
   ~Encoder();
   void                  encodeWeightsRD ( py::array_t<float32_t, py::array::c_style> Weights, py::array_t<float32_t, py::array::c_style> Intervals, float32_t stepsize, float32_t lambda );
   void                  encodeWeightsRD ( py::array_t<float32_t, py::array::c_style> Weights,             float32_t                      Interval,  float32_t stepsize, float32_t lambda );
+  void encodeWeightsRD(py::array_t<int8_t, py::array::c_style> Weights);
+
   py::array_t<uint8_t, py::array::c_style>  finish();
 private:
   std::vector<uint8_t>  m_Bytestream;
@@ -83,7 +85,7 @@ void Encoder::encodeWeightsRD( py::array_t<float32_t, py::array::c_style> Weight
 
   uint32_t layerWidth = 1;
   uint32_t numWeights = 1;
-  for( size_t idx = 0; idx < bi_Weights.ndim; idx++ )
+  for( long int idx = 0; idx < bi_Weights.ndim; idx++ )
   {
     numWeights *= bi_Weights.shape[idx];
     if( idx == 0 ) { continue; }
@@ -101,13 +103,32 @@ void Encoder::encodeWeightsRD( py::array_t<float32_t, py::array::c_style> Weight
 
   uint32_t layerWidth = 1;
   uint32_t numWeights = 1;
-  for( size_t idx = 0; idx < bi_Weights.ndim; idx++ )
+  for( long int idx = 0; idx < bi_Weights.ndim; idx++ )
   {
     numWeights *= bi_Weights.shape[idx];
     if( idx == 0 ) { continue; }
     layerWidth *= bi_Weights.shape[idx];
   }
   m_CABACEncoder->encodeWeightsRD( pWeights, Interval, stepsize, lambda, layerWidth, numWeights );
+}
+
+void Encoder::encodeWeightsRD(py::array_t<int8_t, py::array::c_style> Weights)
+{
+    // m_CABACEncoder->encodeSideinfo( stepsize, Weights );
+
+    py::buffer_info bi_Weights = Weights.request();
+
+    uint32_t numWeights = 1;
+    for (long int idx = 0; idx < bi_Weights.ndim; idx++)
+    {
+        numWeights *= bi_Weights.shape[idx];
+        if (idx == 0)
+        {
+            continue;
+        }
+    }
+    int8_t *pWeights_8 = (int8_t*)bi_Weights.ptr;
+    m_CABACEncoder->encodeWeightsRD(pWeights_8, numWeights);
 }
 
 py::array_t<uint8_t, py::array::c_style> Encoder::finish()
@@ -132,6 +153,7 @@ public:
   ~Decoder();
   void                                        getStream     ( py::array_t<uint8_t, py::array::c_style> Bytestream );
   py::array_t<float32_t, py::array::c_style>  decodeWeights ();
+  py::array_t<int8_t, py::array::c_style>     decodeWeights(uint32_t numWeights);
   uint32_t                                    finish        ();
 
 private:
@@ -190,6 +212,15 @@ py::array_t<float32_t, py::array::c_style>  Decoder::decodeWeights()
   return Rec;
 }
 
+py::array_t<int8_t, py::array::c_style> Decoder::decodeWeights(uint32_t numWeights)
+{
+    auto Weights = py::array_t<int8_t, py::array::c_style>(numWeights);
+    py::buffer_info bi_Weights = Weights.request();
+    int8_t *pWeights_8 = (int8_t *)bi_Weights.ptr;
+    m_CABACDecoder->decodeWeights(pWeights_8, numWeights);
+    return Weights;
+}
+
 uint32_t Decoder::finish()
 {
   uint32_t bytesRead = m_CABACDecoder->terminateCabacDecoding();
@@ -205,11 +236,13 @@ PYBIND11_MODULE(deepCABAC, m)
         // there is a nicer syntax when relying on C++14, but this is compatible to C++11 as well:
         .def( "encodeWeightsRD", (void (Encoder::*) (py::array_t<float32_t, py::array::c_style>, py::array_t<float32_t, py::array::c_style>, float32_t, float32_t)) &Encoder::encodeWeightsRD )
         .def( "encodeWeightsRD", (void (Encoder::*) (py::array_t<float32_t, py::array::c_style>, float32_t, float32_t, float32_t))                                  &Encoder::encodeWeightsRD )
+        .def( "encodeWeightsRD", (void (Encoder::*) (py::array_t<int8_t, py::array::c_style>)                                    )                                  &Encoder::encodeWeightsRD )
         .def( "finish",          &Encoder::finish          );
 
     py::class_<Decoder>(m, "Decoder")
         .def( py::init<>())
         .def( "getStream",     &Decoder::getStream,    py::keep_alive<1, 2>())
-        .def( "decodeWeights", &Decoder::decodeWeights )
+        .def( "decodeWeights", (py::array_t<float32_t, py::array::c_style> (Decoder::*) ()) &Decoder::decodeWeights )
+        .def( "decodeWeights", (py::array_t<int8_t, py::array::c_style> (Decoder::*) (uint32_t)) &Decoder::decodeWeights )
         .def( "finish",        &Decoder::finish        );
 }

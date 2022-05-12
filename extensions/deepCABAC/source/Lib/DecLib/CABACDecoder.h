@@ -58,6 +58,7 @@ public:
     void decodeStepsize         ( float32_t &stepsize );
     void decodeSideinfo         ( std::vector<uint32_t>* pDimensions, float32_t& stepsize   );
     void decodeWeights          ( int32_t* pWeights, uint32_t layerWidth, uint32_t numWeights );
+    void decodeWeights          ( int8_t* pWeights, uint32_t numWeights );
     void decodeWeightVal        ( int32_t& decodedIntVal );
 
     uint32_t getBytesRead();

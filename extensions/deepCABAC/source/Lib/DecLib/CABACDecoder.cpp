@@ -94,6 +94,19 @@ void CABACDecoder::decodeSideinfo( std::vector<uint32_t>* pDimensions, float32_t
   stepsize = uiTf.f;
 }
 
+void CABACDecoder::decodeWeights( int8_t* pWeights, uint32_t numWeights )
+{
+    m_CtxModeler.resetNeighborCtx();
+    for (uint32_t posInMat = 0; posInMat < numWeights; posInMat++)
+    {
+        pWeights[posInMat] = 0;
+        int32_t temp_data = 0;
+        decodeWeightVal( temp_data );
+        pWeights[ posInMat ] = static_cast<int8_t>(temp_data);
+        m_CtxModeler.updateNeighborCtx(pWeights[ posInMat ], posInMat, numWeights);
+    }
+}
+
 void CABACDecoder::decodeWeights( int32_t* pWeights, uint32_t layerWidth, uint32_t numWeights )
 {
     m_CtxModeler.resetNeighborCtx();

@@ -67,6 +67,7 @@ public:
     void      encodeSideinfo          ( float32_t stepsize, py::array_t<float32_t, py::array::c_style> Weights );
     void      encodeWeightsRD         ( float32_t* pWeights, float32_t* pIntervals, float32_t stepsize, float32_t lambda, uint32_t layerWidth, uint32_t numWeights );
     void      encodeWeightsRD         ( float32_t* pWeights, float32_t   Interval,  float32_t stepsize, float32_t lambda, uint32_t layerWidth, uint32_t numWeights );
+    void      encodeWeightsRD         ( int8_t *pWeights, uint32_t numWeights);
 
 
 

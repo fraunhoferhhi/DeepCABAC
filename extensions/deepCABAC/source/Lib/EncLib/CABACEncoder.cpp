@@ -127,7 +127,7 @@ void  CABACEncoder::encodeWeightVal( int32_t weightInt )
     uint32_t maxAbsPositive = (1 << (BITS_WEIGHT_INTS - 1)) - 1;
     uint32_t maxAbsNegative = (1 << (BITS_WEIGHT_INTS - 1));
 
-    CHECK( !( weightInt >= -(int32_t(maxAbsNegative)) ) || !( weightInt < int32_t(maxAbsPositive) ) , printf("Value to encode %i  exceeds %i bits (stepsize is too small)!", weightInt,  BITS_WEIGHT_INTS))
+    CHECK( !( weightInt >= -(int32_t(maxAbsNegative)) ) || !( weightInt <= int32_t(maxAbsPositive) ) , printf("Value to encode %i  exceeds %i bits (stepsize is too small)!", weightInt,  BITS_WEIGHT_INTS))
 
     uint32_t sigFlag = weightInt != 0 ? 1 : 0;
     int32_t sigctx = m_CtxModeler.getSigCtxId();
@@ -296,4 +296,18 @@ void CABACEncoder::encodeWeightsRD( float32_t* pWeights, float32_t Interval, flo
     encodeWeightVal( bestIntVal );
     m_CtxModeler.updateNeighborCtx( bestIntVal, posInMat, layerWidth );
   }
+}
+
+void CABACEncoder::encodeWeightsRD(int8_t *pWeights, uint32_t numWeights)
+{
+    int32_t bestIntVal = 0;
+    double distSum = 0.0;
+    m_CtxModeler.resetNeighborCtx();
+
+    for (uint32_t posInMat = 0; posInMat < numWeights; posInMat++)
+    {
+        bestIntVal = static_cast<int32_t>(pWeights[posInMat]);
+        encodeWeightVal(bestIntVal);
+        m_CtxModeler.updateNeighborCtx(bestIntVal, posInMat, numWeights);
+    }
 }
