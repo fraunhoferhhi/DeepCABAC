@@ -42,6 +42,7 @@ NON-INFRINGEMENT WITH RESPECT TO THIS SOFTWARE.
 #include <Lib/EncLib/CABACEncoder.h>
 #include <Lib/DecLib/CABACDecoder.h>
 #include <iostream>
+#include <tuple>
 
 namespace py = pybind11;
 
@@ -154,6 +155,7 @@ public:
   void                                        getStream     ( py::array_t<uint8_t, py::array::c_style> Bytestream );
   py::array_t<float32_t, py::array::c_style>  decodeWeights ();
   py::array_t<int8_t, py::array::c_style>     decodeWeights(uint32_t numWeights);
+  std::tuple<py::array_t<int8_t, py::array::c_style>, float32_t>  decodeWeights_wstepsize ();
   uint32_t                                    finish        ();
 
 private:
@@ -221,6 +223,40 @@ py::array_t<int8_t, py::array::c_style> Decoder::decodeWeights(uint32_t numWeigh
     return Weights;
 }
 
+std::tuple<py::array_t<int8_t, py::array::c_style>, float32_t>  Decoder::decodeWeights_wstepsize()
+{
+  std::vector<uint32_t> dimensions;
+  float32_t stepsize;
+
+  m_CABACDecoder->decodeSideinfo( &dimensions, stepsize );
+
+  uint32_t numWeights = 1;
+  uint32_t layerWidth = 1;
+  for( size_t idx = 0; idx < dimensions.size(); idx++ )
+  {
+    numWeights *= dimensions.at(idx);
+    if( idx == 0 ) { continue; }
+    layerWidth *= dimensions.at(idx);
+  }
+
+  auto Weights = py::array_t<int32_t,   py::array::c_style>(numWeights);
+  auto Rec     = py::array_t<int8_t, py::array::c_style>(numWeights);
+
+  py::buffer_info bi_Weights = Weights.request();
+  int32_t* pWeights = (int32_t*)    bi_Weights.ptr;
+
+  py::buffer_info bi_Rec     = Rec.request();
+  int8_t* pRec   = (int8_t*)  bi_Rec.ptr;
+  m_CABACDecoder->decodeWeights( pWeights, layerWidth, numWeights );
+  for( uint32_t i = 0; i < numWeights; i++)
+  {
+    pRec[i] = (int8_t)pWeights[i];
+  }    
+
+  Rec.resize({dimensions});
+  return {Rec, stepsize};
+}
+
 uint32_t Decoder::finish()
 {
   uint32_t bytesRead = m_CABACDecoder->terminateCabacDecoding();
@@ -244,5 +280,6 @@ PYBIND11_MODULE(deepCABAC, m)
         .def( "getStream",     &Decoder::getStream,    py::keep_alive<1, 2>())
         .def( "decodeWeights", (py::array_t<float32_t, py::array::c_style> (Decoder::*) ()) &Decoder::decodeWeights )
         .def( "decodeWeights", (py::array_t<int8_t, py::array::c_style> (Decoder::*) (uint32_t)) &Decoder::decodeWeights )
+        .def( "decodeWeights_wstepsize", (std::tuple<py::array_t<int8_t, py::array::c_style>, float32_t> (Decoder::*) ()) &Decoder::decodeWeights_wstepsize )
         .def( "finish",        &Decoder::finish        );
 }

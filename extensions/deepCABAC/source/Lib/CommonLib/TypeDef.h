@@ -62,7 +62,7 @@ private:
 #define THROW(x)            throw( Exception( "\nERROR: In function \"" ) << __FUNCTION__ << "\" in " << __FILE__ << ":" << __LINE__ << ": " << x )
 #define CHECK(c,x)          if(c){ THROW(x); }
 
-#define BITS_WEIGHT_INTS        8
+#define BITS_WEIGHT_INTS        32
 
 typedef float float32_t;
 
